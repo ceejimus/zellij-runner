@@ -11,6 +11,10 @@ Ad-hoc replacement of Zellij session switcher (which doesn't exist yet).
 <img width="1329" alt="screen" src="https://user-images.githubusercontent.com/4244251/221364651-2011f53f-eaa4-445d-959e-86584ed1ad38.png">
 
 ## Installation
+
+NOTE: if you follow the cargo install instructions below you won't be getting this mod
+
+
 ```sh
 cargo install zellij-runner
 ```

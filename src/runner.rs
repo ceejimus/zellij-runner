@@ -1,32 +1,12 @@
-use clap::Parser;
+use crate::{action::Action, ui, zellij, Args};
 
-use crate::{action::Action, ui, zellij};
-
-#[derive(Parser, Debug)]
-#[clap(name = "zellij-runner")]
-struct Args {
-    #[arg(short, long)]
-    session: Option<String>,
-    #[arg(short, long)]
-    layout: Option<String>,
-}
-
-pub(crate) fn init() {
-    let args = Args::parse();
-
-    // Workflow
-    // - if no active sessions
-    //  - if session is specified attach to session ignoring layouts
-    //  - if only layout is specified then start new session w/ zellij random name
-    // - if active sessions
-    //  - if session and layout are given -> start new session as specified
-    //
+pub(crate) fn init(args: Args) {
     let action = match zellij::list_sessions() {
         Err(error) => Action::Exit(Err(error)),
         Ok(sessions) => match (args.session, args.layout, sessions.as_slice()) {
             (None, layout, &[]) => {
                 // TODO: add optional layout specification
-                ui::new_session_prompt(sessions, layout)
+                ui::new_session_prompt(sessions, layout, args.chdir)
             }
             (session, layout, &[]) => Action::CreateNewSession {
                 session,
@@ -54,12 +34,13 @@ pub(crate) fn init() {
     action.exec()
 }
 
-pub(crate) fn switch() {
+pub(crate) fn switch(args: Args) {
+    // Note: probably not the best way to do this, but it's fine
     let action = match zellij::list_sessions() {
         Err(error) => Action::Exit(Err(error)),
         Ok(sessions) => match sessions.as_slice() {
             // TODO: keep layout somewhere global and use?? prolly not
-            &[] => ui::new_session_prompt(sessions, None),
+            &[] => ui::new_session_prompt(sessions, None, args.chdir),
             _ => ui::action_selector(sessions, None),
         },
     };

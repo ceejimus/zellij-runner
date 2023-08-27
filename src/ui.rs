@@ -28,9 +28,18 @@ pub(crate) fn action_selector(sessions: Vec<String>, layout: Option<String>) -> 
     UI::render(Box::new(screen), sessions, layout)
 }
 
-pub(crate) fn new_session_prompt(sessions: Vec<String>, layout: Option<String>) -> Action {
-    let screen = ChangeCurrentDirPromptScreen;
-    UI::render(Box::new(screen), sessions, layout)
+pub(crate) fn new_session_prompt(
+    sessions: Vec<String>,
+    layout: Option<String>,
+    chdir: bool,
+) -> Action {
+    let screen: Box<dyn Screen> = if chdir {
+        Box::new(DirSelectorScreen::new())
+    } else {
+        let cwd = Dir::cwd();
+        Box::new(SessionNameScreen::new(cwd.filename(), Some(cwd)))
+    };
+    UI::render(screen, sessions, layout)
 }
 
 static LAYOUTS: Lazy<Layouts> = Lazy::new(Layouts::new);
@@ -49,7 +58,6 @@ struct UI<'a> {
 }
 
 struct UIContext<'a> {
-    cwd: Dir,
     sessions: Vec<String>,
     layout: Option<String>,
     banner: Option<Banner<'a>>,
@@ -69,7 +77,6 @@ impl<'a> UI<'a> {
         let mut ui = Self {
             screen,
             context: UIContext {
-                cwd: Dir::cwd(),
                 sessions,
                 layout,
                 banner: BANNERS.random(),
@@ -224,7 +231,6 @@ impl Banners {
                 let banner = &banners[idx];
                 let lines = banner
                     .lines()
-                    .into_iter()
                     .map(|l| Spans(vec![Span::raw(l)]))
                     .collect::<Vec<Spans>>();
 
@@ -692,7 +698,7 @@ impl<'a> Screen for ActionSelectorScreen<'a> {
                                     ScreenResult::Action(Action::AttachToSession(session))
                                 }
                                 ActionSelectorItem::NewSession { input: _ } => {
-                                    ScreenResult::NextScreen(Box::new(ChangeCurrentDirPromptScreen))
+                                    ScreenResult::NextScreen(Box::new(DirSelectorScreen::new()))
                                 }
                             };
                             return Ok(result);
@@ -705,30 +711,6 @@ impl<'a> Screen for ActionSelectorScreen<'a> {
                 }
             }
         }
-    }
-}
-
-struct ChangeCurrentDirPromptScreen;
-
-impl Screen for ChangeCurrentDirPromptScreen {
-    fn render(&mut self, term: &mut Term, ctx: &UIContext) -> io::Result<ScreenResult> {
-        let question = Spans(vec![
-            Span::raw("Change directory? "),
-            Span::styled(
-                ctx.cwd.to_string(),
-                Style::default().add_modifier(Modifier::DIM),
-            ),
-        ]);
-
-        let on_select = |should_change_dir| {
-            if should_change_dir {
-                ScreenResult::NextScreen(Box::new(DirSelectorScreen::new()))
-            } else {
-                ScreenResult::NextScreen(Box::new(SessionNameScreen::new(ctx.cwd.filename(), None)))
-            }
-        };
-
-        Prompt::new(question, on_select).render(term, ctx)
     }
 }
 

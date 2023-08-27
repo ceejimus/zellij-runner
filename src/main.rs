@@ -55,6 +55,8 @@
 //! ZELLIJ_RUNNER_MAX_DIRS_DEPTH=3
 //! ```
 
+use clap::Parser;
+
 mod action;
 mod dir;
 mod log;
@@ -63,10 +65,23 @@ mod runner;
 mod ui;
 mod zellij;
 
+#[derive(Parser, Debug, Clone)]
+#[clap(name = "zellij-runner")]
+struct Args {
+    #[arg(short, long)]
+    session: Option<String>,
+    #[arg(short, long)]
+    layout: Option<String>,
+    #[arg(long, action)]
+    chdir: bool,
+}
+
 fn main() {
-    runner::init();
+    let args = Args::parse();
+
+    runner::init(args.clone());
 
     loop {
-        runner::switch();
+        runner::switch(args.clone());
     }
 }
