@@ -963,6 +963,15 @@ impl Screen for SessionNameScreen {
                                     ),
                                 )));
                             } else {
+                                // TODO: check specified layouts in layouts and give prompt anyway?
+                                if ctx.layout.is_some() {
+                                    return Ok(ScreenResult::Action(Action::CreateNewSession {
+                                        session: Some(self.input.value.to_owned()),
+                                        layout: ctx.layout.to_owned(),
+                                        dir: self.dir.to_owned(),
+                                    }));
+                                }
+
                                 match LAYOUTS.get() {
                                     None => {
                                         return Ok(ScreenResult::Action(Action::CreateNewSession {

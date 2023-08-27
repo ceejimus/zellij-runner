@@ -1,5 +1,3 @@
-use std::env;
-
 use clap::Parser;
 
 use crate::{action::Action, ui, zellij};
@@ -16,6 +14,13 @@ struct Args {
 pub(crate) fn init() {
     let args = Args::parse();
 
+    // Workflow
+    // - if no active sessions
+    //  - if session is specified attach to session ignoring layouts
+    //  - if only layout is specified then start new session w/ zellij random name
+    // - if active sessions
+    //  - if session and layout are given -> start new session as specified
+    //
     let action = match zellij::list_sessions() {
         Err(error) => Action::Exit(Err(error)),
         Ok(sessions) => match (args.session, args.layout, sessions.as_slice()) {
@@ -28,8 +33,7 @@ pub(crate) fn init() {
                 layout,
                 dir: None,
             },
-            // TODO: make "prompt" arg
-            // (None, None, &[]) => ui::new_session_prompt(sessions),
+            // TODO: make "prompt" arg ?
             (Some(session), layout, _) => {
                 if sessions.contains(&session) {
                     // just ignore layout if attaching to session -- for now
